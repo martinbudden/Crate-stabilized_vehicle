@@ -1,0 +1,61 @@
+[package]
+name = "stabilized_vehicle"
+version = "0.1.0"
+edition = "2024"
+authors = ["Martin Budden"]
+license = "MIT OR Apache-2.0"
+
+[features]
+default = ["use_madgwick_filter","use_rpm_filters"]
+#default = ["use_mahony_filter"]
+#default = ["use_complementary_filter"]
+use_madgwick_filter = []
+use_complementary_filter = []
+use_mahony_filter = []
+use_rpm_filters = []
+
+[dependencies]
+num-traits = "0.2.19"
+cfg-if = "1.0"
+
+vector-quaternion-matrix = { git = "https://github.com/martinbudden/Crate-vector_quaternion_matrix" }
+imu-sensors = { git = "https://github.com/martinbudden/Crate-imu_sensors" }
+sensor-fusion = { git = "https://github.com/martinbudden/Crate-sensor_fusion" }
+filters = { git = "https://github.com/martinbudden/Crate-filters" }
+pid-controller = { git = "https://github.com/martinbudden/Crate-pid_controller" }
+motor-mixers = { git = "https://github.com/martinbudden/Crate-motor_mixers" }
+
+
+[dev-dependencies]
+# assert_float_eq = "1.2.0" # used for test
+
+# see https://doc.rust-lang.org/cargo/reference/profiles.html
+[profile.dev]
+opt-level = 0
+debug = true
+# split-debuginfo = '...'  # Platform-specific.
+strip = "none"
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = 'unwind'
+incremental = true
+codegen-units = 256
+rpath = false
+
+[profile.release]
+opt-level = 3
+debug = false
+# split-debuginfo = '...'  # Platform-specific.
+strip = "none"
+debug-assertions = false
+overflow-checks = false
+lto = false
+panic = 'abort'
+incremental = false
+codegen-units = 16
+rpath = false
+
+[profile.release-lto]
+inherits = "release"
+lto = true

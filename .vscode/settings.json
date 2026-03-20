@@ -1,0 +1,32 @@
+{
+    "cSpell.words": [
+        "acosf",
+        "adjugate",
+        "Ahrs",
+        "asinf",
+        "Biquad",
+        "blackbox",
+        "Budden",
+        "bytemuck",
+        "codegen",
+        "cosf",
+        "debuginfo",
+        "Eigen",
+        "Filterf",
+        "fract",
+        "hypot",
+        "libm",
+        "Madgwick",
+        "mahony",
+        "Pitchf",
+        "Quaternionf",
+        "Readingf",
+        "roundf",
+        "Shuster",
+        "sinf",
+        "sqrtf",
+        "tanf",
+        "trunc",
+        "Yawf"
+    ]
+}
