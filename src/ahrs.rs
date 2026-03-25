@@ -1,5 +1,5 @@
 #![allow(unused)]
-use crate::{ImuFilters, ImuFiltersState, VehicleController, VehicleControllerState};
+use crate::{FilterImuReading, ImuFilterBank, VehicleControl, VehicleController};
 use imu_sensors::ImuReadingf32;
 use sensor_fusion::SensorFusion;
 use vector_quaternion_matrix::{Quaternionf32, Vector3df32};
@@ -29,8 +29,8 @@ pub trait Ahrs {
     fn read_imu_and_update_orientation(
         &mut self,
         time_us: u32,
-        imu_filters: ImuFiltersState,
-        vehicle_controller: VehicleControllerState,
+        imu_filters: ImuFilterBank,
+        vehicle_controller: VehicleController,
     ) -> AhrsData;
 
     fn set_overflow_sign_change_threshold_rps(&mut self, overflow_sign_change_threshold_rps: f32) {
@@ -53,7 +53,7 @@ pub trait Ahrs {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct AhrsState {
-    imu_filters: ImuFiltersState,
+    imu_filters: ImuFilterBank,
     overflow_sign_change_threshold_rps_squared: f32,
     gyro_rps_previous: Vector3df32, // For overflow checking
     ahrs_data: AhrsData,
@@ -69,7 +69,7 @@ pub struct AhrsState {
 impl AhrsState {
     fn new() -> Self {
         Self {
-            imu_filters: ImuFiltersState::default(),
+            imu_filters: ImuFilterBank::default(),
             overflow_sign_change_threshold_rps_squared: 1500.0f32.to_radians() * 1500.0f32.to_radians(),
             gyro_rps_previous: Vector3df32::default(),
             ahrs_data: AhrsData::default(),
@@ -95,8 +95,8 @@ impl Ahrs for AhrsState {
     fn read_imu_and_update_orientation(
         &mut self,
         _time_us: u32,
-        _imu_filters: ImuFiltersState,
-        _vehicle_controller: VehicleControllerState,
+        _imu_filters: ImuFilterBank,
+        _vehicle_controller: VehicleController,
     ) -> AhrsData {
         // if the data was read in the IMU interrupt service routine we can just get the data, rather than read it
         //self.ahrs_data.acc_gyro_rps = (_taskType == INTERRUPT_DRIVEN) ? _IMU.get_acc_gyro_rps() : _IMU.read_acc_gyro_rps();
@@ -107,7 +107,7 @@ impl Ahrs for AhrsState {
         // TODO: this looks ripe for chaining (Ahrs)
         // apply the filters
         self.ahrs_data.gyro_rps_unfiltered = self.ahrs_data.imu_reading.gyro_rps; // unfiltered value saved for blackbox recording
-        self.ahrs_data.imu_reading = self.imu_filters.filter(self.ahrs_data.imu_reading, self.ahrs_data.delta_t); // 15us, 207us
+        self.ahrs_data.imu_reading = self.imu_filters.apply(self.ahrs_data.imu_reading, self.ahrs_data.delta_t); // 15us, 207us
 
         self.ahrs_data.orientation =
             self.sensor_fusion_filter.update_orientation(self.ahrs_data.imu_reading, self.ahrs_data.delta_t); // 15us, 140us

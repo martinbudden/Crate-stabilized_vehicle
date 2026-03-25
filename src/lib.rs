@@ -8,8 +8,8 @@ mod ahrs;
 mod imu_filters;
 mod vehicle_controller;
 
-pub use vehicle_controller::{VehicleController, VehicleControllerState};
+pub use vehicle_controller::{VehicleControl, VehicleController};
 
 pub use ahrs::{Ahrs, AhrsData};
 
-pub use imu_filters::{ImuFilters, ImuFiltersConfig, ImuFiltersState};
+pub use imu_filters::{FilterImuReading, ImuFilterBank, ImuFilterBankConfig};
