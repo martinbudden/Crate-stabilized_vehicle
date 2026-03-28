@@ -121,7 +121,7 @@ impl FilterImuReading for ImuFilterBank {
         cfg_if! {
             if #[cfg(feature = "use_rpm_filters")] {
             for ii in 0..self.state().motor_count {
-                imu_reading.gyro_rps = self.state_mut().rpm_filters.apply_notch_filters(imu_reading.gyro_rps,ii);
+                imu_reading.gyro_rps = self.state_mut().rpm_filters.update_using_notch_filters(imu_reading.gyro_rps,ii);
             }
             }
         }
