@@ -647,7 +647,7 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 [[package]]
 name = "filters"
 version = "0.1.0"
-source = "git+https://github.com/martinbudden/crate-filters#e51b3645f90e6e00016182a69c1003815245e82d"
+source = "git+https://github.com/martinbudden/crate-filters#7ee54322d371b152e9b9c3dfd3c0e5eced3b8207"
 dependencies = [
  "num-traits",
  "vector-quaternion-matrix",
@@ -1745,7 +1745,7 @@ checksum = "77439c1b53d2303b20d9459b1ade71a83c716e3f9c34f3228c00e6f185d6c002"
 [[package]]
 name = "vector-quaternion-matrix"
 version = "0.1.0"
-source = "git+https://github.com/martinbudden/crate-vector-quaternion-matrix#3a8f6cc091ade272280e19d010cedc506911f840"
+source = "git+https://github.com/martinbudden/crate-vector-quaternion-matrix#2ed324a9de3481efbb05eee4d81e028a490f6f82"
 dependencies = [
  "approx",
  "bytemuck",
