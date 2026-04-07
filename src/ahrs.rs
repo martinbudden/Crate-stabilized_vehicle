@@ -4,11 +4,11 @@ use imu_sensors::{ImuReading, ImuReadingf32};
 use sensor_fusion::SensorFusion;
 use vector_quaternion_matrix::{Quaternion, Quaternionf32, Vector3df32};
 
-#[cfg(feature = "use_complementary_filter")]
+#[cfg(feature = "complementary_filter")]
 use sensor_fusion::ComplementaryFilterf32;
-#[cfg(feature = "use_madgwick_filter")]
+#[cfg(feature = "madgwick_filter")]
 use sensor_fusion::MadgwickFilterf32;
-#[cfg(feature = "use_mahony_filter")]
+#[cfg(feature = "mahony_filter")]
 use sensor_fusion::MahonyFilterf32;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -58,11 +58,11 @@ pub struct AhrsState {
     gyro_rps_previous: Vector3df32, // For overflow checking
     ahrs_data: AhrsData,
     sensor_fusion_filter_is_initializing: bool,
-    #[cfg(feature = "use_madgwick_filter")]
+    #[cfg(feature = "madgwick_filter")]
     sensor_fusion_filter: MadgwickFilterf32,
-    #[cfg(feature = "use_mahony_filter")]
+    #[cfg(feature = "mahony_filter")]
     sensor_fusion_filter: MahonyFilterf32,
-    #[cfg(feature = "use_complementary_filter")]
+    #[cfg(feature = "complementary_filter")]
     sensor_fusion_filter: ComplementaryFilterf32,
 }
 
@@ -74,7 +74,12 @@ impl AhrsState {
             gyro_rps_previous: Vector3df32::default(),
             ahrs_data: AhrsData::default(),
             sensor_fusion_filter_is_initializing: true,
+            #[cfg(feature = "madgwick_filter")]
             sensor_fusion_filter: MadgwickFilterf32::default(),
+            #[cfg(feature = "mahony_filter")]
+            sensor_fusion_filter: MahonyFilterf32::default(),
+            #[cfg(feature = "complementary_filter")]
+            sensor_fusion_filter: ComplementaryFilterf32::default(),
         }
     }
 }

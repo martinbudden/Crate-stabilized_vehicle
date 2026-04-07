@@ -5,7 +5,7 @@ use filters::{BiquadFilterVector3df32, Pt1FilterVector3df32, SignalFilter};
 use imu_sensors::ImuReadingf32;
 use motor_mixers::RpmFilters;
 
-#[cfg(feature = "use_rpm_filters")]
+#[cfg(feature = "rpm_filters")]
 use motor_mixers::RpmFilterBank;
 
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
@@ -48,7 +48,7 @@ pub struct ImuFilterBank {
     gyro_lpf2: Pt1FilterVector3df32,
     gyro_notch1: BiquadFilterVector3df32,
     gyro_notch2: BiquadFilterVector3df32,
-    #[cfg(feature = "use_rpm_filters")]
+    #[cfg(feature = "rpm_filters")]
     rpm_filters: RpmFilterBank,
 }
 
@@ -68,7 +68,7 @@ impl ImuFilterBank {
             gyro_lpf2: Pt1FilterVector3df32::default(),
             gyro_notch1: BiquadFilterVector3df32::default(),
             gyro_notch2: BiquadFilterVector3df32::default(),
-            #[cfg(feature = "use_rpm_filters")]
+            #[cfg(feature = "rpm_filters")]
             rpm_filters: RpmFilterBank::default(),
         }
     }
@@ -117,10 +117,10 @@ impl FilterImuReading for ImuFilterBank {
         if self.config().gyro_notch2_hz != 0 {
             imu_reading.gyro_rps = self.state_mut().gyro_notch2.update(imu_reading.gyro_rps);
         }
-        #[cfg(feature = "use_rpm_filters")]
+        #[cfg(feature = "rpm_filters")]
 
         cfg_if! {
-            if #[cfg(feature = "use_rpm_filters")] {
+            if #[cfg(feature = "rpm_filters")] {
             for ii in 0..self.state().motor_count {
                 imu_reading.gyro_rps = self.state_mut().rpm_filters.update_using_notch_filters(imu_reading.gyro_rps,ii);
             }

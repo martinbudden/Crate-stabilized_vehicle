@@ -10,22 +10,28 @@ readme = "README.md"
 rustdoc-args = ["--html-in-header", "katex-header.html"]
 
 [features]
-default = ["use_madgwick_filter","use_rpm_filters"]
-#default = ["use_mahony_filter"]
-#default = ["use_complementary_filter"]
-use_madgwick_filter = []
-use_complementary_filter = []
-use_mahony_filter = []
-use_rpm_filters = []
+default = ["libm",  "rpm_filters", "madgwick_filter"]
+#default = ["libm",  "rpm_filters", "mahony_filter"]
+madgwick_filter = []
+mahony_filter = []
+complementary_filter = []
+rpm_filters = []
+std = ["vector-quaternion-matrix/std","filters/std", "imu-sensors/std"]
+no_align = ["vector-quaternion-matrix/no_align", "filters/no_align", "imu-sensors/no_align"]
+simd = ["vector-quaternion-matrix/simd", "filters/simd", "imu-sensors/simd"]
+libm = ["num-traits/libm", "vector-quaternion-matrix/libm","filters/libm", "imu-sensors/libm"]
+
+[build-dependencies]
+rustc_version = "0.4.1"
 
 [dependencies]
-num-traits = "0.2.19"
+num-traits = { version = "0.2.19", default-features = false }
 cfg-if = "1.0"
 
-vector-quaternion-matrix = { git = "https://github.com/martinbudden/crate-vector-quaternion-matrix" }
-imu-sensors = { git = "https://github.com/martinbudden/crate-imu-sensors" }
-sensor-fusion = { git = "https://github.com/martinbudden/crate-sensor-fusion" }
-filters = { git = "https://github.com/martinbudden/crate-filters" }
+vector-quaternion-matrix = { git = "https://github.com/martinbudden/crate-vector-quaternion-matrix", default-features = false}
+imu-sensors = { git = "https://github.com/martinbudden/crate-imu-sensors", default-features = false}
+sensor-fusion = { git = "https://github.com/martinbudden/crate-sensor-fusion", default-features = false}
+filters = { git = "https://github.com/martinbudden/crate-filters",default-features = false}
 pid-controller = { git = "https://github.com/martinbudden/crate-pid-controller" }
 motor-mixers = { git = "https://github.com/martinbudden/crate-motor-mixers" }
 
