@@ -1,9 +1,8 @@
-use cfg_if::cfg_if;
 use serde::{Deserialize, Serialize};
 
-use filters::{BiquadFilterVector3df32, Pt1FilterVector3df32, SignalFilter};
-use imu_sensors::ImuReadingf32;
+use filters::{BiquadFilterVector3df32, MedianFilter3f32, Pt1FilterVector3df32, SignalFilter};
 use motor_mixers::RpmFilters;
+use vector_quaternion_matrix::Vector3df32;
 
 #[cfg(feature = "rpm_filters")]
 use motor_mixers::RpmFilterBank;
@@ -44,6 +43,7 @@ pub struct ImuFilterBank {
     motor_count: usize,
     config: ImuFilterBankConfig,
     acc_lpf: Pt1FilterVector3df32,
+    gyro_skew: [MedianFilter3f32; 3],
     gyro_lpf1: Pt1FilterVector3df32,
     gyro_lpf2: Pt1FilterVector3df32,
     gyro_notch1: BiquadFilterVector3df32,
@@ -64,6 +64,7 @@ impl ImuFilterBank {
             motor_count: 4,
             config: ImuFilterBankConfig::default(),
             acc_lpf: Pt1FilterVector3df32::default(),
+            gyro_skew: [MedianFilter3f32::default(), MedianFilter3f32::default(), MedianFilter3f32::default()],
             gyro_lpf1: Pt1FilterVector3df32::default(),
             gyro_lpf2: Pt1FilterVector3df32::default(),
             gyro_notch1: BiquadFilterVector3df32::default(),
@@ -74,23 +75,23 @@ impl ImuFilterBank {
     }
     pub fn set_config(&mut self, config: ImuFilterBankConfig, delta_t: f32) {
         self.config = config;
-        self.acc_lpf.set_cutoff_frequency_and_reset(config.acc_lpf_hz as f32, delta_t);
-        self.gyro_lpf1.set_cutoff_frequency_and_reset(config.gyro_lpf1_hz as f32, delta_t);
-        self.gyro_lpf2.set_cutoff_frequency_and_reset(config.gyro_lpf1_hz as f32, delta_t);
-        self.gyro_notch1.set_notch_frequency(config.gyro_notch1_hz as f32, config.gyro_notch1_cutoff as f32);
-        self.gyro_notch2.set_notch_frequency(config.gyro_notch2_hz as f32, config.gyro_notch2_cutoff as f32);
+        self.acc_lpf.set_cutoff_frequency_and_reset(f32::from(config.acc_lpf_hz), delta_t);
+        self.gyro_lpf1.set_cutoff_frequency_and_reset(f32::from(config.gyro_lpf1_hz), delta_t);
+        self.gyro_lpf2.set_cutoff_frequency_and_reset(f32::from(config.gyro_lpf1_hz), delta_t);
+        self.gyro_notch1.set_notch_frequency(f32::from(config.gyro_notch1_hz), f32::from(config.gyro_notch1_cutoff));
+        self.gyro_notch2.set_notch_frequency(f32::from(config.gyro_notch2_hz), f32::from(config.gyro_notch2_cutoff));
     }
 }
 
-pub trait FilterImuReading {
+pub trait FilterAccGyro {
     fn state(&self) -> &ImuFilterBank;
     fn state_mut(&mut self) -> &mut ImuFilterBank;
     fn config(&self) -> &ImuFilterBankConfig;
 
-    fn apply(&mut self, imu_reading: ImuReadingf32, delta_t: f32) -> ImuReadingf32;
+    fn update(&mut self, acc: Vector3df32, gyro_rps: Vector3df32, delta_t: f32) -> (Vector3df32, Vector3df32);
 }
 
-impl FilterImuReading for ImuFilterBank {
+impl FilterAccGyro for ImuFilterBank {
     fn state(&self) -> &ImuFilterBank {
         self
     }
@@ -101,33 +102,31 @@ impl FilterImuReading for ImuFilterBank {
         &self.state().config
     }
 
-    fn apply(&mut self, mut imu_reading: ImuReadingf32, _delta_t: f32) -> ImuReadingf32 {
+    fn update(&mut self, mut acc: Vector3df32, mut gyro_rps: Vector3df32, _delta_t: f32) -> (Vector3df32, Vector3df32) {
         if self.config().acc_lpf_hz != 0 {
-            imu_reading.acc = self.state_mut().acc_lpf.update(imu_reading.acc);
+            acc = self.state_mut().acc_lpf.update(acc);
         }
+        gyro_rps.x = self.state_mut().gyro_skew[0].update(gyro_rps.x);
+        gyro_rps.x = self.state_mut().gyro_skew[1].update(gyro_rps.y);
+        gyro_rps.x = self.state_mut().gyro_skew[2].update(gyro_rps.z);
         if self.config().gyro_lpf1_hz != 0 {
-            imu_reading.gyro_rps = self.state_mut().gyro_lpf1.update(imu_reading.gyro_rps);
+            gyro_rps = self.state_mut().gyro_lpf1.update(gyro_rps);
         }
         if self.config().gyro_lpf2_hz != 0 {
-            imu_reading.gyro_rps = self.state_mut().gyro_lpf2.update(imu_reading.gyro_rps);
+            gyro_rps = self.state_mut().gyro_lpf2.update(gyro_rps);
         }
         if self.config().gyro_notch1_hz != 0 {
-            imu_reading.gyro_rps = self.state_mut().gyro_notch1.update(imu_reading.gyro_rps);
+            gyro_rps = self.state_mut().gyro_notch1.update(gyro_rps);
         }
         if self.config().gyro_notch2_hz != 0 {
-            imu_reading.gyro_rps = self.state_mut().gyro_notch2.update(imu_reading.gyro_rps);
+            gyro_rps = self.state_mut().gyro_notch2.update(gyro_rps);
         }
         #[cfg(feature = "rpm_filters")]
-
-        cfg_if! {
-            if #[cfg(feature = "rpm_filters")] {
-            for ii in 0..self.state().motor_count {
-                imu_reading.gyro_rps = self.state_mut().rpm_filters.update_using_notch_filters(imu_reading.gyro_rps,ii);
-            }
-            }
+        for ii in 0..self.state().motor_count {
+            gyro_rps = self.state_mut().rpm_filters.update_using_notch_filters(gyro_rps, ii);
         }
 
-        imu_reading
+        (acc, gyro_rps)
     }
 }
 
@@ -135,7 +134,8 @@ impl FilterImuReading for ImuFilterBank {
 mod tests {
     use super::*;
 
-    fn _is_normal<T: Sized + Send + Sync + Unpin>() {}
+    #[allow(unused)]
+    fn is_normal<T: Sized + Send + Sync + Unpin>() {}
     fn is_full<T: Sized + Send + Sync + Unpin + Copy + Clone + Default + PartialEq>() {}
     fn is_config<
         T: Sized + Send + Sync + Unpin + Copy + Clone + Default + PartialEq + Serialize + for<'a> Deserialize<'a>,

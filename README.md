@@ -1,8 +1,8 @@
-# stabilize_vehicle Rust Crate ![license](https://img.shields.io/badge/license-MIT-green) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) ![open source](https://badgen.net/badge/open/source/blue?icon=github)
+# `stabilize_vehicle` Rust Crate ![license](https://img.shields.io/badge/license-MIT-green) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) ![open source](https://badgen.net/badge/open/source/blue?icon=github)
 
 ## Original implementation
 
-This crate was originally implemented as a c++ library. The
+This crate was originally implemented as a C++ library. The
 [original implementation can be found here](https://github.com/martinbudden/Library-StabilizeVehicle).
 
 ## License

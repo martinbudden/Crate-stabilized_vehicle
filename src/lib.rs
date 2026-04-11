@@ -5,6 +5,11 @@
 #![deny(clippy::expect_used)]
 #![deny(clippy::panic)]
 #![deny(unused_must_use)]
+#![warn(unused_results)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::inline_always)]
+#![allow(clippy::return_self_not_must_use)]
+#![allow(clippy::must_use_candidate)]
 
 mod ahrs;
 mod imu_filters;
@@ -14,4 +19,4 @@ pub use vehicle_controller::{VehicleControl, VehicleController};
 
 pub use ahrs::{Ahrs, AhrsData};
 
-pub use imu_filters::{FilterImuReading, ImuFilterBank, ImuFilterBankConfig};
+pub use imu_filters::{FilterAccGyro, ImuFilterBank, ImuFilterBankConfig};

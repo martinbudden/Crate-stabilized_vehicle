@@ -1,8 +1,6 @@
-//#![allow(unused)]
-use crate::{FilterImuReading, ImuFilterBank, VehicleController};
-use imu_sensors::{ImuReading, ImuReadingf32};
+use crate::{FilterAccGyro, ImuFilterBank, VehicleController};
 use sensor_fusion::SensorFusion;
-use vector_quaternion_matrix::{Quaternion, Quaternionf32, Vector3df32};
+use vector_quaternion_matrix::{Quaternion, Quaternionf32, Vector3d, Vector3df32};
 
 #[cfg(feature = "complementary_filter")]
 use sensor_fusion::ComplementaryFilterf32;
@@ -14,7 +12,8 @@ use sensor_fusion::MahonyFilterf32;
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct AhrsData {
     // AhrsMessageQueue contains this data
-    imu_reading: ImuReadingf32,
+    acc: Vector3df32,
+    gyro_rps: Vector3df32,
     gyro_rps_unfiltered: Vector3df32,
     orientation: Quaternionf32,
     delta_t: f32,
@@ -39,14 +38,14 @@ pub trait Ahrs {
     }
     // Check for overflow on z axis, ie sign of z-value has changed when the z-value is large
     fn check_gyro_overflow_z(&mut self) {
-        if self.state().ahrs_data.imu_reading.gyro_rps.z * self.state().gyro_rps_previous.z
+        if self.state().ahrs_data.gyro_rps.z * self.state().gyro_rps_previous.z
             < -self.state().overflow_sign_change_threshold_rps_squared
         {
             // we've had a sign change of a large value, ie from (say) 1900 to -1950, so this is an overflow, so don't accept the new gyro z-value
-            self.state_mut().ahrs_data.imu_reading.gyro_rps.z = self.state().gyro_rps_previous.z;
+            self.state_mut().ahrs_data.gyro_rps.z = self.state().gyro_rps_previous.z;
         } else {
             // normal sign change, ie from (say) 20 to -10, so set _gyro_rps_previous for next time round
-            self.state_mut().gyro_rps_previous.z = self.state().ahrs_data.imu_reading.gyro_rps.z;
+            self.state_mut().gyro_rps_previous.z = self.state().ahrs_data.gyro_rps.z;
         }
     }
 }
@@ -94,10 +93,10 @@ pub trait FuseImuReading<T> {
     fn fuse_acc_gyro_using<F: SensorFusion<T>>(self, filter: &mut F, delta_t: T) -> Quaternion<T>;
 }
 
-impl<T> FuseImuReading<T> for ImuReading<T> {
+impl<T> FuseImuReading<T> for (Vector3d<T>, Vector3d<T>) {
     fn fuse_acc_gyro_using<F: SensorFusion<T>>(self, filter: &mut F, delta_t: T) -> Quaternion<T> {
-        let imu_reading = self;
-        filter.fuse_acc_gyro(imu_reading.acc, imu_reading.gyro_rps, delta_t)
+        let (acc, gyro_rps) = self;
+        filter.fuse_acc_gyro(acc, gyro_rps, delta_t)
     }
 }
 
@@ -124,8 +123,9 @@ impl Ahrs for AhrsState {
 
         // TODO: this looks ripe for chaining (Ahrs)
         // apply the filters
-        self.ahrs_data.gyro_rps_unfiltered = self.ahrs_data.imu_reading.gyro_rps; // unfiltered value saved for blackbox recording
-        self.ahrs_data.imu_reading = self.imu_filters.apply(self.ahrs_data.imu_reading, self.ahrs_data.delta_t); // 15us, 207us
+        self.ahrs_data.gyro_rps_unfiltered = self.ahrs_data.gyro_rps; // unfiltered value saved for blackbox recording
+        (self.ahrs_data.acc, self.ahrs_data.gyro_rps) =
+            self.imu_filters.update(self.ahrs_data.acc, self.ahrs_data.gyro_rps, self.ahrs_data.delta_t); // 15us, 207us
 
         //self.ahrs_data.imu_reading.filter_using(self.imu_filters, self.imu_filters, self.ahrs_data.delta_t);
 
@@ -135,8 +135,8 @@ impl Ahrs for AhrsState {
             self.ahrs_data.delta_t,
         ); // 15us, 140us*/
 
-        self.ahrs_data.orientation =
-            self.ahrs_data.imu_reading.fuse_acc_gyro_using(&mut self.sensor_fusion_filter, self.ahrs_data.delta_t);
+        self.ahrs_data.orientation = (self.ahrs_data.acc, self.ahrs_data.gyro_rps)
+            .fuse_acc_gyro_using(&mut self.sensor_fusion_filter, self.ahrs_data.delta_t);
 
         /*if (self.sensor_fusion_filter_is_initializing) {
             if (self.fusion_filter_has_converged(self.ahrs_data.imu_reading.acc, self.ahrs_data.orientation)) {
@@ -168,11 +168,11 @@ mod tests {
     #[test]
     fn default_ahrs_state() {
         let ahrs_state = AhrsState::default();
-        assert_eq!(true, ahrs_state.sensor_fusion_filter_is_initializing);
+        assert!(ahrs_state.sensor_fusion_filter_is_initializing);
     }
     #[test]
     fn new_ahrs_state() {
         let ahrs_state = AhrsState::new();
-        assert_eq!(true, ahrs_state.sensor_fusion_filter_is_initializing);
+        assert!(ahrs_state.sensor_fusion_filter_is_initializing);
     }
 }

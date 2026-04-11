@@ -5,6 +5,16 @@ edition = "2024"
 authors = ["Martin Budden"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
+repository = "https://github.com/martinbudden/crate-stabilized-vehicle"
+description = "A vector, quaternion, and matrix library targeted at embedded systems and robotics."
+keywords = ["3D", "vector", "quaternion", "matrix", "Euler angles", "no-std"]
+categories = [
+    "Embedded development",
+    "Mathematics",
+    "No standard library",
+    "Robotics",
+    "Science",
+]
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--html-in-header", "katex-header.html"]
@@ -16,20 +26,20 @@ madgwick_filter = []
 mahony_filter = []
 complementary_filter = []
 rpm_filters = []
-std = ["vector-quaternion-matrix/std","filters/std", "imu-sensors/std"]
-no_align = ["vector-quaternion-matrix/no_align", "filters/no_align", "imu-sensors/no_align"]
-simd = ["vector-quaternion-matrix/simd", "filters/simd", "imu-sensors/simd"]
-libm = ["num-traits/libm", "vector-quaternion-matrix/libm","filters/libm", "imu-sensors/libm"]
+std = ["vector-quaternion-matrix/std","filters/std"]
+no_align = ["vector-quaternion-matrix/no_align", "filters/no_align"]
+simd = ["vector-quaternion-matrix/simd", "filters/simd"]
+libm = ["num-traits/libm", "vector-quaternion-matrix/libm","filters/libm"]
 
 [build-dependencies]
 rustc_version = "0.4.1"
 
 [dependencies]
 num-traits = { version = "0.2.19", default-features = false }
-cfg-if = "1.0"
+criterion = { version = "0.8.2", features = ["html_reports"] }
+rand = "0.10.1" 
 
 vector-quaternion-matrix = { git = "https://github.com/martinbudden/crate-vector-quaternion-matrix", default-features = false}
-imu-sensors = { git = "https://github.com/martinbudden/crate-imu-sensors", default-features = false}
 sensor-fusion = { git = "https://github.com/martinbudden/crate-sensor-fusion", default-features = false}
 filters = { git = "https://github.com/martinbudden/crate-filters",default-features = false}
 pid-controller = { git = "https://github.com/martinbudden/crate-pid-controller" }
@@ -41,7 +51,7 @@ serde = { version = "1.0.228", default-features = false, features = ["derive"] }
 postcard = { version = "1.0", features = ["embedded-io"] }
 
 [dev-dependencies]
-# assert_float_eq = "1.2.0" # used for test
+approx = { version = "0.5", default-features = false }
 
 # see https://doc.rust-lang.org/cargo/reference/profiles.html
 [profile.dev]
@@ -73,3 +83,7 @@ rpath = false
 [profile.release-lto]
 inherits = "release"
 lto = true
+
+[[bench]]
+name = "sv_bench"
+harness = false
